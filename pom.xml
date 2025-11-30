@@ -9,6 +9,12 @@
     <name>BP2501901 Maven Webapp</name>
     <url>http://maven.apache.org</url>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+    </properties>
+
     <!-- 1. 사용할 라이브러리(의존성) 정의 -->
     <dependencies>
         <!-- JSP/Servlet API (톰캣에 이미 있으므로 'provided' 스코프) -->

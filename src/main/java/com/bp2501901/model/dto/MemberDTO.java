@@ -13,8 +13,8 @@ public class MemberDTO {
     private String id;
     private String pass;
     private String name;
-    private java.sql.Timestamp regdate; // regdate 컬럼 타입이 DATETIME이므로 Timestamp 사용
-
+    private java.sql.Timestamp regdate; // regdate 컬럼 타입이 DATETIME이므로 Timestamp 사용p
+    private String getMemberInfo;
     // 2. Getters and Setters (JSP나 다른 클래스에서 값을 읽고 쓸 때 사용)
     public String getId() {
         return id;

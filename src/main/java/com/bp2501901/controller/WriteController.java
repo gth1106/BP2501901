@@ -9,46 +9,84 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Base64;
+import java.util.UUID;
 
 @WebServlet("/write.do")
 public class WriteController extends HttpServlet {
 
-    // 폼 전송(POST)을 처리
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-        req.setCharacterEncoding("UTF-8"); // 한글 깨짐 방지
+        req.setCharacterEncoding("UTF-8");
 
-        // ★ 1. 컨트롤러 보안: 세션 확인
         HttpSession session = req.getSession();
         String userId = (String) session.getAttribute("UserId");
 
         if (userId == null) {
-            // 혹시라도 로그아웃 상태에서 비정상적 접근(POST) 시도 시
             resp.sendRedirect("login.jsp");
             return;
         }
 
-        // 2. 폼 데이터(View)를 DTO(Model)에 저장
-        BoardDTO dto = new BoardDTO();
-        dto.setCategory(req.getParameter("category"));
-        dto.setTitle(req.getParameter("title"));
-        dto.setContent(req.getParameter("content"));
-        dto.setWriter_id(userId); // ★ 폼이 아닌 세션에서 ID를 가져와 저장 (보안)
+        // 1. 파라미터 받기
+        String category = req.getParameter("category");
+        String title = req.getParameter("title");
+        String content = req.getParameter("content");
+        String imageData = req.getParameter("imageData"); // Base64 이미지 데이터
 
-        // 3. DAO(Model)에 DTO 전달하여 DB에 삽입
+        String savedFileName = null; // 저장된 파일명
+
+        // 2. 이미지 처리 (이미지 데이터가 있는 경우)
+        if (imageData != null && !imageData.isEmpty() && imageData.contains(",")) {
+            try {
+                // Base64 데이터 분리 ("data:image/png;base64," 뒷부분만 추출)
+                String base64Image = imageData.split(",")[1];
+                byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+
+                // 저장 경로 설정 (프로젝트 내부가 아닌 실제 서버 경로)
+                // 예: webapp/uploads 폴더
+                String savePath = req.getServletContext().getRealPath("/uploads");
+                File uploadDir = new File(savePath);
+                if (!uploadDir.exists()) {
+                    uploadDir.mkdir(); // 폴더가 없으면 생성
+                }
+
+                // 고유한 파일명 생성 (UUID 사용)
+                savedFileName = UUID.randomUUID().toString() + ".png";
+                String fullPath = savePath + File.separator + savedFileName;
+
+                // 파일 저장
+                FileOutputStream fos = new FileOutputStream(fullPath);
+                fos.write(imageBytes);
+                fos.close();
+
+                System.out.println("Image saved at: " + fullPath);
+
+            } catch (Exception e) {
+                System.out.println("Image Upload Error");
+                e.printStackTrace();
+            }
+        }
+
+        // 3. DTO 저장
+        BoardDTO dto = new BoardDTO();
+        dto.setCategory(category);
+        dto.setTitle(title);
+        dto.setContent(content);
+        dto.setWriter_id(userId);
+        dto.setSfile(savedFileName); // 저장된 파일명 (없으면 null)
+
+        // 4. DB 삽입
         BoardDAO dao = new BoardDAO();
         int result = dao.insertBoard(dto);
         dao.close();
 
-        // 4. 결과에 따라 View 선택 (목록으로 리다이렉트)
         if (result == 1) {
-            // 글쓰기 성공
             resp.sendRedirect("list.do");
         } else {
-            // 글쓰기 실패
-            // (실제로는 "글쓰기에 실패했습니다." 알림창을 띄우는 것이 좋음)
             resp.sendRedirect("write.jsp");
         }
     }

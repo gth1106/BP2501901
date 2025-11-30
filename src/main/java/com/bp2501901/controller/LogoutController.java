@@ -22,6 +22,6 @@ public class LogoutController extends HttpServlet {
         session.invalidate();
 
         // 3. 메인 페이지(index.jsp)로 리다이렉트합니다.
-        resp.sendRedirect("index.jsp");
+        resp.sendRedirect("main.do");
     }
 }

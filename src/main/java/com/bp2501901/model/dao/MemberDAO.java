@@ -91,4 +91,33 @@ public class MemberDAO extends DBConnPool { // DBConnPool 상속
 
         return result;
     }
+
+    /**
+     * ID로 회원 상세 정보 조회 (마이페이지용)
+     * @param uid 조회할 회원 ID
+     * @return 회원 정보가 담긴 DTO
+     */
+    public MemberDTO getMemberInfo(String uid) {
+        MemberDTO dto = null;
+        String sql = "SELECT * FROM member WHERE id = ?";
+
+        try {
+            PreparedStatement psmt = con.prepareStatement(sql);
+            psmt.setString(1, uid);
+            rs = psmt.executeQuery();
+
+            if (rs.next()) {
+                dto = new MemberDTO();
+                dto.setId(rs.getString("id"));
+                dto.setName(rs.getString("name"));
+                dto.setRegdate(rs.getTimestamp("regdate"));
+                // 비밀번호는 보안상 가져오지 않음
+            }
+            // DAO 내부에서 close() 하지 않음 (Controller에서 수행)
+        } catch (Exception e) {
+            System.out.println("Member Info Select Error");
+            e.printStackTrace();
+        }
+        return dto;
+    }
 }

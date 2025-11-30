@@ -1,121 +1,155 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
-         pageEncoding="UTF-8" isELIgnored="false" %> <%-- ★ 1. JSTL 버그 수정 --%>
-<%-- JSTL(JSP Standard Tag Library)을 사용하기 위한 'taglib' 지시어 --%>
+         pageEncoding="UTF-8" isELIgnored="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <title>게시판 목록 - BP2501901</title>
+    <!-- 부트스트랩 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 커스텀 CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
     <style>
-        /* 이전과 동일한 CSS */
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: #f9f9f9; }
-        .header { background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
-        .header .logo { font-size: 24px; font-weight: bold; color: #007bff; }
-        .header .user-menu a { margin-left: 15px; text-decoration: none; color: #333; font-weight: 500; }
-        .header .user-menu a:hover { color: #007bff; }
-        .header .user-menu span { margin-left: 15px; font-weight: 500; color: #007bff; }
-
-        .main-container { width: 90%; max-width: 1000px; margin: 40px auto; padding: 30px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
-        .main-container h1 { margin-top: 0; }
-
-        .table-header { display: flex; justify-content: space-between; align-items: center; }
-        .write-button { padding: 8px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; }
-
-        .board-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .board-table th, .board-table td { padding: 12px 15px; border-bottom: 1px solid #ddd; }
-        .board-table th { background-color: #f7f7f7; font-weight: 600; text-align: center; }
-        .board-table td { text-align: center; }
-        .board-table td.title { text-align: left; }
-        .board-table td.title a { text-decoration: none; color: #333; font-weight: 500; }
-        .board-table td.title a:hover { text-decoration: underline; }
-
-        .empty-message { text-align: center; padding: 50px; color: #777; }
-
-    </style>
-    <script>
-        // ★ 3. 로그인 안 한 사용자가 클릭 시 알림창
-        function requireLogin() {
-            alert('로그인이 필요한 서비스입니다.');
-            location.href = 'login.jsp';
+        /* 페이징 버튼 커스텀 (글래스모피즘 스타일) */
+        .pagination .page-link {
+            background: rgba(255, 255, 255, 0.3); /* 반투명 배경 */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #333;
+            margin: 0 3px;
+            border-radius: 8px; /* 둥근 모서리 */
+            backdrop-filter: blur(5px);
         }
-    </script>
+        .pagination .page-link:hover {
+            background: rgba(255, 255, 255, 0.6);
+            color: #0d6efd;
+        }
+        .pagination .page-item.active .page-link {
+            background: #0d6efd; /* 활성화된 페이지 (파란색) */
+            color: white;
+            border-color: #0d6efd;
+            box-shadow: 0 4px 6px rgba(13, 110, 253, 0.3);
+        }
+    </style>
 </head>
 <body>
 
-<header class="header">
-    <div class="logo">
-        <a href="index.jsp" style="text-decoration: none; color: inherit;">BP2501901 Blog</a>
+<!-- 헤더 -->
+<nav class="navbar navbar-expand-lg glass-nav sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-glass-dark" href="main.do">BP2501901</a>
+        <div class="d-flex align-items-center">
+            <% if (session.getAttribute("UserId") == null) { %>
+            <a href="login.jsp" class="btn btn-light bg-opacity-50 btn-sm me-2 fw-bold">로그인</a>
+            <a href="join.jsp" class="btn btn-glass-primary btn-sm rounded-pill px-3">회원가입</a>
+            <% } else { %>
+            <span class="me-3 fw-bold text-dark"><%= session.getAttribute("UserName") %>님</span>
+            <a href="mypage.do" class="text-dark text-decoration-none me-3 small">마이페이지</a>
+            <a href="logout.do" class="btn btn-danger bg-opacity-75 border-0 btn-sm rounded-pill">로그아웃</a>
+            <% } %>
+        </div>
     </div>
-    <nav class="user-menu">
-        <% if (session.getAttribute("UserId") == null) { %>
-        <a href="login.jsp">로그인</a>
-        <a href="join.jsp">회원가입</a>
-        <% } else { %>
-        <span>[<%= session.getAttribute("UserName") %>님]</span>
-        <a href="mypage.jsp">마이페이지</a>
-        <a href="logout.do">로그아웃</a>
-        <% } %>
-        <a href="list.do">기술 게시판</a>
-    </nav>
-</header>
+</nav>
 
-<div class="main-container">
-    <div class="table-header">
-        <h1>기술 게시판</h1>
+<!-- 메인 콘텐츠 -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="glass-card p-5">
 
-        <%-- ★ 2. 글쓰기 버튼 보안 (로그인한 사용자에게만 보임) --%>
-        <c:if test="${not empty sessionScope.UserId}">
-            <a href="write.jsp" class="write-button">글쓰기</a>
-        </c:if>
+                <!-- 게시판 상단 (제목 + 글쓰기 버튼) -->
+                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-dark border-opacity-10 pb-3">
+                    <h2 class="fw-bold text-glass-dark m-0">기술 게시판</h2>
+
+                    <!-- 전체 글 개수 표시 -->
+                    <span class="badge bg-secondary bg-opacity-25 text-dark ms-2">
+                            Total : ${map.totalCount}
+                        </span>
+
+                    <div class="ms-auto">
+                        <c:if test="${not empty sessionScope.UserId}">
+                            <a href="write.jsp" class="btn btn-glass-primary btn-sm rounded-pill px-4 fw-bold">✏️ 글쓰기</a>
+                        </c:if>
+                    </div>
+                </div>
+
+                <!-- 게시판 테이블 -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" style="background-color: transparent;">
+                        <thead class="table-light bg-opacity-50 text-center">
+                        <tr>
+                            <th width="8%" class="py-3">번호</th>
+                            <th width="12%">카테고리</th>
+                            <th width="*">제목</th>
+                            <th width="15%">작성자</th>
+                            <th width="20%">작성일</th>
+                            <th width="10%">조회수</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <c:forEach var="dto" items="${boardList}">
+                            <tr>
+                                <td class="text-center fw-bold text-muted">${dto.num}</td>
+                                <td class="text-center">
+                                            <span class="badge bg-light text-dark border border-secondary border-opacity-25 rounded-pill px-3 py-2">
+                                                    ${dto.category}
+                                            </span>
+                                </td>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${not empty sessionScope.UserId}">
+                                            <a href="view.do?num=${dto.num}" class="text-decoration-none text-dark fw-bold d-block text-truncate" style="max-width: 300px;">
+                                                    ${dto.title}
+                                            </a>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <a href="#" onclick="requireLogin();" class="text-decoration-none text-dark fw-bold d-block text-truncate" style="max-width: 300px;">
+                                                    ${dto.title}
+                                            </a>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </td>
+                                <td class="text-center text-muted small">${dto.writer_name}</td>
+                                <td class="text-center text-muted small">
+                                    <fmt:formatDate value="${dto.postdate}" pattern="yyyy.MM.dd"/>
+                                </td>
+                                <td class="text-center text-muted small">${dto.visitcount}</td>
+                            </tr>
+                        </c:forEach>
+
+                        <c:if test="${empty boardList}">
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    등록된 게시물이 없습니다.
+                                </td>
+                            </tr>
+                        </c:if>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ★ 페이징 (Controller에서 map.pagingStr로 전달됨) -->
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <!-- Java 문자열로 만들어진 HTML 코드를 그대로 출력 -->
+                        ${map.pagingStr}
+                    </ul>
+                </nav>
+
+            </div>
+        </div>
     </div>
-
-    <table class="board-table">
-        <thead>
-        <tr>
-            <th width="10%">번호</th>
-            <th width="15%">카테고리</th>
-            <th width="*">제목</th>
-            <th width="15%">작성자</th>
-            <th width="15%">작성일</th>
-            <th width="10%">조회수</th>
-        </tr>
-        </thead>
-        <tbody>
-        <c:forEach var="dto" items="${boardList}">
-            <tr>
-                <td>${dto.num}</td>
-                <td>${dto.category}</td>
-                <td class="title">
-                        <%-- ★ 3. 게시글 링크 보안 --%>
-                    <c:choose>
-                        <c:when test="${not empty sessionScope.UserId}">
-                            <%-- 3.1. 로그인 한 경우: 상세보기로 이동 --%>
-                            <a href="view.do?num=${dto.num}">${dto.title}</a>
-                        </c:when>
-                        <c:otherwise>
-                            <%-- 3.2. 로그인 안 한 경우: JS 알림창 --%>
-                            <a href="#" onclick="requireLogin();">${dto.title}</a>
-                        </c:otherwise>
-                    </c:choose>
-                </td>
-                <td>${dto.writer_name}</td>
-                <td>${dto.postdate}</td>
-                <td>${dto.visitcount}</td>
-            </tr>
-        </c:forEach>
-
-        <c:if test="${empty boardList}">
-            <tr>
-                <td colspan="6" class="empty-message">
-                    등록된 게시물이 없습니다.
-                </td>
-            </tr>
-        </c:if>
-        </tbody>
-    </table>
 </div>
+
+<!-- 로그인 알림 스크립트 -->
+<script>
+    function requireLogin() {
+        alert('로그인이 필요한 서비스입니다.');
+        location.href = 'login.jsp';
+    }
+</script>
 
 </body>
 </html>
